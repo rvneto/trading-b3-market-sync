@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: b3-market-sync-api
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6381
+
+app:
+  brapi:
+    url: https://brapi.dev/api
+    token: ${BRAPI_TOKEN:mFk3HMLijAtxsP5y1ZnjBe}
+    tickers:
+      - "PETR4"
+      - "PETR3"
+      - "VALE3"
+
+server:
+  port: 8096
