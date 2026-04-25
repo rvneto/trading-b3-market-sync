@@ -10,9 +10,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.DayOfWeek;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 import static java.util.Objects.nonNull;
 
@@ -21,49 +20,49 @@ import static java.util.Objects.nonNull;
 @Slf4j
 public class MarketSyncScheduler {
 
+    private static final ZoneId SAO_PAULO = ZoneId.of("America/Sao_Paulo");
+
     private final BrapiClient brapiClient;
     private final BrapiProperties brapiProperties;
     private final MarketDataService marketDataService;
 
-    @Scheduled(fixedRate = 1800000)
+    @Scheduled(fixedRateString = "${app.sync.interval:1800000}")
     public void sync() {
-
         if (!isMarketOpen()) {
-            log.info("Sincronizacao abortada: Mercado Financeiro Fechado (Fora do horario comercial ou FDS).");
+            log.info("Sync aborted: market is closed (outside trading hours or weekend).");
             return;
         }
 
-        log.info("Iniciando rodada de sincronização para {} ativos", brapiProperties.getTickers().size());
+        log.info("Starting sync round for {} assets", brapiProperties.getTickers().size());
 
         for (String ticker : brapiProperties.getTickers()) {
             try {
-                log.debug("Buscando cotação para: {}", ticker);
+                log.debug("Fetching quote for: {}", ticker);
                 BrapiResponseDTO response = brapiClient.getQuote(ticker.trim(), brapiProperties.getToken());
 
                 if (nonNull(response.getResults()) && !response.getResults().isEmpty()) {
                     marketDataService.saveToCache(response.getResults().getFirst());
                 }
 
-                // Um pequeno delay entre chamadas evita "Rate Limit" no plano free
+                // Small delay between calls to avoid hitting rate limit on free plan
                 Thread.sleep(200);
 
             } catch (Exception e) {
-                log.error("Falha ao sincronizar ticker {}: {}", ticker, e.getMessage());
+                log.error("Failed to sync ticker {}: {}", ticker, e.getMessage());
             }
         }
     }
 
     private boolean isMarketOpen() {
-        LocalDateTime now = LocalDateTime.now();
+        ZonedDateTime now = ZonedDateTime.now(SAO_PAULO);
         DayOfWeek day = now.getDayOfWeek();
         int hour = now.getHour();
 
-        // if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) { // TODO testando no domingo
-        if (day == DayOfWeek.SATURDAY) {
+        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
             return false;
         }
 
-        // return hour >= 10 && hour < 18;  // TODO testando antes das 10
-        return hour >= 7 && hour < 23;
+        // B3 trading hours: 10:00 to 18:00 (Sao Paulo time)
+        return hour >= 10 && hour < 18;
     }
 }

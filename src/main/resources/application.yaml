@@ -5,16 +5,35 @@ spring:
   data:
     redis:
       host: ${REDIS_HOST:localhost}
-      port: 6381
+      port: ${REDIS_PORT:6381}
 
 app:
   brapi:
     url: https://brapi.dev/api
-    token: ${BRAPI_TOKEN:mFk3HMLijAtxsP5y1ZnjBe}
+    token: ${BRAPI_TOKEN}
     tickers:
       - "PETR4"
       - "PETR3"
       - "VALE3"
+  sync:
+    interval: 1800000
 
 server:
   port: 8096
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /api-docs
