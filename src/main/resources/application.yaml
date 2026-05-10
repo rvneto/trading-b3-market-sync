@@ -7,16 +7,25 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6381}
 
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: false
+    date-format: "yyyy-MM-dd'T'HH:mm:ss"
+
 app:
   brapi:
     url: https://brapi.dev/api
-    token: ${BRAPI_TOKEN}
+    token: ${BRAPI_TOKEN:mFk3HMLijAtxsP5y1ZnjBe}
     tickers:
       - "PETR4"
       - "PETR3"
       - "VALE3"
   sync:
     interval: 1800000
+    market:
+      open-hour: 10
+      close-hour: 18
+      check-weekend: true
 
 server:
   port: 8096
@@ -37,3 +46,7 @@ springdoc:
     operations-sorter: alpha
   api-docs:
     path: /api-docs
+
+logging:
+  level:
+    com.rvneto: DEBUG

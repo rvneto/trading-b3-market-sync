@@ -13,25 +13,23 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @Configuration
 public class RedisConfig {
 
+    @Bean("redisObjectMapper")
+    public ObjectMapper redisObjectMapper() {
+        ObjectMapper om = new ObjectMapper();
+        om.registerModule(new JavaTimeModule());
+        om.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        return om;
+    }
+
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory,
+                                                        ObjectMapper redisObjectMapper) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
-
-        // Serializador de Chave
         template.setKeySerializer(new StringRedisSerializer());
-
-        // Configuração do ObjectMapper para o Valor
-        ObjectMapper om = new ObjectMapper();
-        // Registra o suporte a Java 8 Date/Time
-        om.registerModule(new JavaTimeModule());
-        // Opcional: Salva no formato ISO-8601 legível em vez de array de números
-        om.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-        // Serializador de Valor usando o ObjectMapper configurado
-        Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(om, Object.class);
+        Jackson2JsonRedisSerializer<Object> serializer =
+                new Jackson2JsonRedisSerializer<>(redisObjectMapper, Object.class);
         template.setValueSerializer(serializer);
-
         return template;
     }
 }

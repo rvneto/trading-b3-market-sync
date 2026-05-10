@@ -6,6 +6,7 @@ import com.rvneto.b3.market.sync.dto.BrapiResponseDTO;
 import com.rvneto.b3.market.sync.service.MarketDataService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +26,15 @@ public class MarketSyncScheduler {
     private final BrapiClient brapiClient;
     private final BrapiProperties brapiProperties;
     private final MarketDataService marketDataService;
+
+    @Value("${app.sync.market.open-hour:10}")
+    private int marketOpenHour;
+
+    @Value("${app.sync.market.close-hour:18}")
+    private int marketCloseHour;
+
+    @Value("${app.sync.market.check-weekend:true}")
+    private boolean checkWeekend;
 
     @Scheduled(fixedRateString = "${app.sync.interval:1800000}")
     public void sync() {
@@ -48,7 +58,7 @@ public class MarketSyncScheduler {
                 Thread.sleep(200);
 
             } catch (Exception e) {
-                log.error("Failed to sync ticker {}: {}", ticker, e.getMessage());
+                log.error("Failed to sync ticker {}: {}", ticker, e.getMessage(), e);
             }
         }
     }
@@ -58,11 +68,10 @@ public class MarketSyncScheduler {
         DayOfWeek day = now.getDayOfWeek();
         int hour = now.getHour();
 
-        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+        if (checkWeekend && (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY)) {
             return false;
         }
 
-        // B3 trading hours: 10:00 to 18:00 (Sao Paulo time)
-        return hour >= 10 && hour < 18;
+        return hour >= marketOpenHour && hour < marketCloseHour;
     }
 }
